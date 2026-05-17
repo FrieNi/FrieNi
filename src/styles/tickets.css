@@ -1,0 +1,423 @@
+/* Tickets — inbox list and detail shell. Modular: any kind plugs into the
+   same shell via TicketRegistry. Detail body styles live with the kind
+   (trim ticket has its own ticket.css). */
+
+.tk-shell {
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  height: calc(100vh - 52px);
+  background: var(--bg-canvas);
+}
+
+/* ── Inbox column ─────────────────────────────────────────────── */
+.tk-inbox {
+  border-right: 1px solid var(--line-soft);
+  background: var(--bg-surface);
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.tk-inbox-head {
+  padding: 18px 18px 10px;
+  border-bottom: 1px solid var(--line-soft);
+  flex-shrink: 0;
+}
+.tk-inbox-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.tk-inbox-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink-1);
+  margin: 0;
+}
+.tk-inbox-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+.tk-inbox-filters {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+.tk-pill {
+  font: inherit;
+  font-family: var(--font-sans);
+  font-size: 11.5px;
+  font-weight: 500;
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--ink-3);
+  padding: 4px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tk-pill:hover { background: var(--bg-inset); color: var(--ink-1); }
+.tk-pill.active {
+  background: var(--ink-1);
+  color: var(--bg-elevated);
+  border-color: var(--ink-1);
+}
+.tk-pill-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  opacity: 0.6;
+}
+.tk-pill.active .tk-pill-count { opacity: 0.8; }
+
+.tk-inbox-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 0 24px;
+}
+.tk-inbox-empty {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.tk-inbox-empty-glyph {
+  font-family: var(--font-display);
+  font-size: 32px;
+  color: var(--ink-4);
+  margin-bottom: 12px;
+}
+
+/* Inbox row */
+.tk-row {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 12px;
+  padding: 12px 18px;
+  border-bottom: 1px solid var(--line-soft);
+  cursor: pointer;
+  align-items: start;
+  position: relative;
+  transition: background 0.1s;
+}
+.tk-row:hover { background: var(--bg-canvas); }
+.tk-row.active {
+  background: var(--bg-elevated);
+}
+.tk-row.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--brand);
+}
+.tk-row-glyph {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 600;
+  background: var(--bg-inset);
+  color: var(--ink-2);
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+.tk-row-glyph[data-kind="trim"]    { background: var(--brand-soft); color: var(--brand-ink); }
+.tk-row-glyph[data-kind="hedge"]   { background: var(--info-soft);  color: var(--info); }
+.tk-row-glyph[data-kind="rebalance"] { background: var(--warn-soft); color: var(--warn); }
+.tk-row-glyph[data-kind="tax-loss"] { background: var(--gain-soft); color: var(--gain); }
+
+.tk-row-body { min-width: 0; }
+.tk-row-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.tk-row-id {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-4);
+  letter-spacing: 0.02em;
+}
+.tk-row-source {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 600;
+}
+.tk-row-subject {
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink-1);
+  margin-bottom: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tk-row-summary {
+  font-size: 12px;
+  color: var(--ink-3);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.tk-row-aside {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+.tk-row-time {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+.tk-status {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  color: var(--ink-3);
+}
+.tk-status[data-status="open"]      { background: var(--brand-soft); color: var(--brand-ink); }
+.tk-status[data-status="queued"]    { background: var(--info-soft); color: var(--info); }
+.tk-status[data-status="filled"]    { background: var(--gain-soft); color: var(--gain); }
+.tk-status[data-status="dismissed"] { background: var(--bg-inset); color: var(--ink-4); }
+.tk-status[data-status="snoozed"]   { background: var(--warn-soft); color: var(--warn); }
+.tk-status[data-status="draft"]     { background: var(--bg-inset); color: var(--ink-3); }
+
+.tk-priority-flag {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--ink-4);
+}
+.tk-priority-flag[data-p="high"]     { background: var(--warn); }
+.tk-priority-flag[data-p="critical"] { background: var(--loss); }
+
+/* ── Detail column ────────────────────────────────────────────── */
+.tk-detail {
+  overflow-y: auto;
+  background: var(--bg-canvas);
+}
+.tk-detail-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 48px;
+  text-align: center;
+  color: var(--ink-3);
+}
+.tk-detail-empty-glyph {
+  font-family: var(--font-display);
+  font-size: 56px;
+  color: var(--line-strong);
+  margin-bottom: 18px;
+  line-height: 1;
+}
+.tk-detail-empty-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink-2);
+  margin: 0 0 8px;
+}
+.tk-detail-empty-body {
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 38ch;
+  margin: 0;
+}
+
+/* Detail header bar — common chrome above any kind's body */
+.tk-detail-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 32px;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--bg-surface);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  flex-wrap: wrap;
+}
+.tk-detail-bar-id {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  color: var(--ink-3);
+  letter-spacing: 0.02em;
+}
+.tk-detail-bar-kind {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.tk-detail-bar-kind-glyph {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 700;
+}
+.tk-detail-bar-spacer { flex: 1; }
+.tk-detail-bar-source {
+  font-size: 11.5px;
+  color: var(--ink-3);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.tk-detail-bar-source strong { color: var(--ink-2); font-weight: 500; }
+.tk-detail-bar-actions {
+  display: inline-flex;
+  gap: 4px;
+}
+.tk-icon-btn {
+  background: none;
+  border: none;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  padding: 5px 9px;
+  border-radius: var(--r-sm);
+  cursor: pointer;
+}
+.tk-icon-btn:hover { background: var(--bg-inset); color: var(--ink-1); }
+
+.tk-detail-body { padding: 0; }
+
+/* History strip */
+.tk-history {
+  margin-top: 24px;
+  padding: 18px 0 0;
+  border-top: 1px solid var(--line-soft);
+}
+.tk-history-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+  margin-bottom: 12px;
+}
+.tk-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tk-history-item {
+  display: grid;
+  grid-template-columns: 130px 1fr;
+  gap: 16px;
+  font-size: 12.5px;
+  align-items: baseline;
+}
+.tk-history-when {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-4);
+  font-variant-numeric: tabular-nums;
+}
+.tk-history-event {
+  font-weight: 500;
+  color: var(--ink-1);
+  text-transform: capitalize;
+}
+.tk-history-by {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-3);
+  margin-left: 6px;
+}
+.tk-history-note {
+  color: var(--ink-2);
+  margin-top: 2px;
+  display: block;
+}
+
+/* Generic placeholder body for kinds without a custom detail (yet) */
+.tk-generic {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 32px;
+}
+.tk-generic-subject {
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--ink-1);
+  margin: 0 0 10px;
+  text-wrap: pretty;
+}
+.tk-generic-summary {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0 0 28px;
+  max-width: 60ch;
+}
+.tk-generic-stub {
+  padding: 24px;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--r-md);
+  background: var(--bg-surface);
+  font-size: 12.5px;
+  color: var(--ink-3);
+  line-height: 1.6;
+  text-wrap: pretty;
+}
+.tk-generic-stub strong { color: var(--ink-2); font-weight: 500; }
+
+/* Override: when ticket detail shows the trim flow, drop the trim shell's
+   centering+padding because the inbox shell already provides framing. */
+.tk-detail-body .ticket-shell {
+  max-width: none;
+  margin: 0;
+  padding: 0 32px 140px;
+}
+.tk-detail-body .ticket-back { display: none; }
+
+/* Sidebar badge with an indicator dot */
+.nav-item-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--brand);
+  margin-left: auto;
+}

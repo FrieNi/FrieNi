@@ -1,0 +1,39 @@
+/* Badge */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--r-xs);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.badge-gain { background: var(--gain-soft); color: var(--gain); }
+.badge-loss { background: var(--loss-soft); color: var(--loss); }
+.badge-warn { background: var(--warn-soft); color: var(--warn); }
+.badge-info { background: var(--info-soft); color: var(--info); }
+.badge-brand { background: var(--brand-soft); color: var(--brand-ink); }
+.badge-neutral { background: var(--bg-inset); color: var(--ink-2); }
+
+.badge-dot::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
+.delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+}
+.delta-gain { color: var(--gain); }
+.delta-loss { color: var(--loss); }
+.delta-arrow { font-size: 0.85em; line-height: 1; }

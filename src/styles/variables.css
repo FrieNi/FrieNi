@@ -1,0 +1,72 @@
+/* Design tokens — warm professional trading palette */
+:root {
+  /* Surfaces — warm cream paper */
+  --bg-canvas: #f5f1ea;
+  --bg-surface: #fbf8f2;
+  --bg-elevated: #ffffff;
+  --bg-inset: #efe9df;
+  --bg-overlay: rgba(38, 28, 22, 0.55);
+
+  /* Ink — warm charcoal */
+  --ink-1: #1f1812;       /* Primary text */
+  --ink-2: #4a3f36;       /* Secondary */
+  --ink-3: #7a6c5e;       /* Tertiary / labels */
+  --ink-4: #a89a8a;       /* Muted */
+  --ink-5: #c9bdac;       /* Disabled */
+
+  /* Lines */
+  --line-soft: #e6dccb;
+  --line-strong: #d4c6ad;
+
+  /* Brand — burnt amber */
+  --brand: #c2531e;
+  --brand-hover: #a8431a;
+  --brand-soft: #f3dcc8;
+  --brand-ink: #5c2410;
+
+  /* Semantic — warm */
+  --gain: #4f7a3f;        /* sage green */
+  --gain-soft: #dde8ce;
+  --loss: #b04a3a;        /* warm brick */
+  --loss-soft: #f1d4cc;
+  --warn: #b08020;        /* honey */
+  --warn-soft: #f3e3bf;
+  --info: #2d5e7a;        /* slate teal */
+  --info-soft: #cfe0e8;
+
+  /* Chart palette */
+  --chart-1: #c2531e;
+  --chart-2: #4f7a3f;
+  --chart-3: #2d5e7a;
+  --chart-4: #b08020;
+  --chart-5: #7a4a8a;
+  --chart-6: #6b5a3e;
+
+  /* Radius */
+  --r-xs: 4px;
+  --r-sm: 6px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-xl: 16px;
+
+  /* Shadow */
+  --shadow-sm: 0 1px 2px rgba(50, 30, 15, 0.06);
+  --shadow-md: 0 4px 12px rgba(50, 30, 15, 0.08), 0 1px 2px rgba(50, 30, 15, 0.04);
+  --shadow-lg: 0 12px 32px rgba(50, 30, 15, 0.12), 0 2px 6px rgba(50, 30, 15, 0.06);
+
+  /* Type */
+  --font-sans: "Söhne", "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-display: "Tiempos Headline", "GT Sectra", "Source Serif 4", Georgia, serif;
+  --font-mono: "JetBrains Mono", "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Spacing */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+}

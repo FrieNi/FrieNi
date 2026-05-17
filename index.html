@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1280" />
+  <title>FrieNi · Trading Workstation</title>
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="src/styles/reset.css" />
+  <link rel="stylesheet" href="src/styles/variables.css" />
+  <link rel="stylesheet" href="src/styles/globals.css" />
+  <link rel="stylesheet" href="src/styles/pages.css" />
+  <link rel="stylesheet" href="src/components/Button/Button.module.css" />
+  <link rel="stylesheet" href="src/components/Card/Card.module.css" />
+  <link rel="stylesheet" href="src/components/Badge/Badge.module.css" />
+  <link rel="stylesheet" href="src/components/Navigation/Navigation.module.css" />
+  <link rel="stylesheet" href="src/components/Chart/Chart.module.css" />
+  <link rel="stylesheet" href="src/components/DataDisplay/DataDisplay.module.css" />
+  <link rel="stylesheet" href="src/styles/detail-tabs.css" />
+  <link rel="stylesheet" href="src/styles/zen.css" />
+  <link rel="stylesheet" href="src/styles/digest.css" />
+  <link rel="stylesheet" href="src/styles/ticket.css" />
+  <link rel="stylesheet" href="src/styles/tickets.css" />
+  <link rel="stylesheet" href="src/styles/wizard.css" />
+
+  <!-- Tweak defaults — host rewrites this block on edit -->
+  <script>
+    window.TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "brand": "#2d5e7a",
+      "canvas": "#f5f1ea",
+      "gain": "#4f7a3f",
+      "loss": "#b04a3a",
+      "radius": 8,
+      "displayFont": "\"Source Serif 4\", Georgia, serif"
+    }/*EDITMODE-END*/;
+  </script>
+
+  <!-- React + Babel -->
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Services & stores (plain JS) -->
+  <script src="src/utils/formatters.js"></script>
+  <script src="src/services/marketData.js"></script>
+  <script src="src/stores/appStore.js"></script>
+  <script src="src/stores/ticketStore.js"></script>
+
+  <!-- Components -->
+  <script type="text/babel" src="src/components/Button/Button.jsx"></script>
+  <script type="text/babel" src="src/components/Card/Card.jsx"></script>
+  <script type="text/babel" src="src/components/Badge/Badge.jsx"></script>
+  <script type="text/babel" src="src/components/Chart/Chart.jsx"></script>
+  <script type="text/babel" src="src/components/Navigation/Navigation.jsx"></script>
+  <script type="text/babel" src="src/components/DataDisplay/DataDisplay.jsx"></script>
+  <script type="text/babel" src="src/components/Widgets/Widgets.jsx"></script>
+  <script type="text/babel" src="src/components/Workspace/WorkspaceSwitcher.jsx"></script>
+  <script type="text/babel" src="src/components/Analysis/Analysis.jsx"></script>
+
+  <!-- Pages -->
+  <script type="text/babel" src="src/pages/ZenDashboard.jsx"></script>
+  <script type="text/babel" src="src/pages/WeeklyDigestPage.jsx"></script>
+  <script type="text/babel" src="src/pages/TrimTicketPage.jsx"></script>
+  <script type="text/babel" src="src/pages/TicketsPage.jsx"></script>
+  <script type="text/babel" src="src/pages/DashboardPage.jsx"></script>
+  <script type="text/babel" src="src/pages/MarketsPage.jsx"></script>
+  <script type="text/babel" src="src/pages/StockDetailTabs.jsx"></script>
+  <script type="text/babel" src="src/pages/StockDetailPage.jsx"></script>
+  <script type="text/babel" src="src/pages/PortfolioPage.jsx"></script>
+  <script type="text/babel" src="src/pages/NewsPage.jsx"></script>
+  <script type="text/babel" src="src/pages/AssistantPage.jsx"></script>
+  <script type="text/babel" src="src/pages/SettingsPage.jsx"></script>
+  <script type="text/babel" src="src/pages/OnboardingWizard.jsx"></script>
+
+  <!-- Layout & router -->
+  <script type="text/babel" src="src/layouts/DefaultLayout.jsx"></script>
+  <script type="text/babel" src="src/routes/AppRoutes.jsx"></script>
+
+  <!-- Tweaks -->
+  <script type="text/babel" src="src/components/Tweaks/tweaks-panel.jsx"></script>
+  <script type="text/babel" src="src/components/Tweaks/FrieNiTweaks.jsx"></script>
+
+  <!-- Mount -->
+  <script type="text/babel" src="src/main.jsx"></script>
+</body>
+</html>
