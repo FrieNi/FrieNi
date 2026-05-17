@@ -7,8 +7,6 @@
 //           React + ReactDOM already loaded above this script
 
 const __AG_STYLE = `
-  html.fpk-hidden { visibility: hidden; }
-
   .ag-screen {
     position: fixed; inset: 0; z-index: 2147483647;
     background: #f9f8f6;
@@ -158,7 +156,7 @@ function AuthGate({ workerUrl, onAuth }) {
         workerUrl,
         onAuth: (user) => {
           // Auth confirmed — reveal the page and remove gate
-          document.documentElement.classList.remove('fpk-hidden');
+          document.documentElement.style.visibility = '';
           gateRoot.remove();
         },
       })
