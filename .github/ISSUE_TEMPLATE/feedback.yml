@@ -1,0 +1,51 @@
+name: "💬 UI Feedback"
+description: "Report a UI issue or suggestion on a specific element"
+labels: ["feedback"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the feedback! This form is also filled automatically by the in-app **Ctrl+click** picker.
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: "App version"
+      description: "Which version of FrieNi are you looking at?"
+      options:
+        - v1
+        - v2
+    validations:
+      required: true
+
+  - type: input
+    id: element
+    attributes:
+      label: "Element (CSS selector)"
+      description: "The CSS selector path to the element — filled automatically by the picker."
+      placeholder: "e.g. main > .card > button.btn.primary"
+    validations:
+      required: true
+
+  - type: input
+    id: element_text
+    attributes:
+      label: "Element visible text"
+      description: "What text was visible on the element (if any)."
+      placeholder: "e.g. \"Back to portfolio\""
+
+  - type: textarea
+    id: comment
+    attributes:
+      label: "Comment / description"
+      description: "What's the issue or suggestion?"
+      placeholder: "Describe the problem or what you'd like to change…"
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: "Additional context"
+      description: "Screenshots, steps to reproduce, or anything else helpful."
+      placeholder: "Optional"

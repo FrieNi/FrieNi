@@ -227,7 +227,13 @@ function FeedbackPicker({ version, repo }) {
       comment.trim(),
     ].filter(s => s !== null).join('\n');
 
-    const params = new URLSearchParams({ title, body, labels: 'feedback' });
+    const params = new URLSearchParams({
+      template: 'feedback.yml',
+      version: version,
+      element: picked.selector,
+      element_text: picked.text || '',
+      comment: comment.trim(),
+    });
     window.open(`https://github.com/${repo}/issues/new?${params}`, '_blank');
     setSubmitted(true);
     setTimeout(() => {
