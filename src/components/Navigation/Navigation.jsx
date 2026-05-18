@@ -132,9 +132,13 @@ const Sidebar = ({ page, onNav }) => {
           aria-haspopup="menu"
           aria-expanded={menuOpen}
         >
-          <div className="user-avatar">EM</div>
+          {window.FpkUser?.avatar_url
+            ? <img src={window.FpkUser.avatar_url} alt={window.FpkUser.login}
+                style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',flexShrink:0}} />
+            : <div className="user-avatar">{window.FpkUser ? window.FpkUser.login.slice(0,2).toUpperCase() : 'EM'}</div>
+          }
           <div className="col" style={{ gap: 0, flex: 1, minWidth: 0 }}>
-            <div className="user-name">Elena Marković</div>
+            <div className="user-name">{window.FpkUser?.name || window.FpkUser?.login || 'Elena Marković'}</div>
             <div className="user-tier">Pro · 2 connections</div>
           </div>
           <svg className="account-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -145,10 +149,14 @@ const Sidebar = ({ page, onNav }) => {
         {menuOpen && (
           <div className="account-menu" role="menu">
             <div className="account-menu-header">
-              <div className="user-avatar account-menu-avatar">EM</div>
+              {window.FpkUser?.avatar_url
+                ? <img src={window.FpkUser.avatar_url} alt={window.FpkUser.login}
+                    style={{width:34,height:34,borderRadius:'50%',objectFit:'cover',flexShrink:0}} />
+                : <div className="user-avatar account-menu-avatar">{window.FpkUser ? window.FpkUser.login.slice(0,2).toUpperCase() : 'EM'}</div>
+              }
               <div className="col" style={{ gap: 2, minWidth: 0 }}>
-                <div className="account-menu-name">Elena Marković</div>
-                <div className="account-menu-email">elena@frieni.co</div>
+                <div className="account-menu-name">{window.FpkUser?.name || window.FpkUser?.login || 'Elena Marković'}</div>
+                <div className="account-menu-email">@{window.FpkUser?.login || 'elena'}</div>
               </div>
             </div>
 
@@ -164,7 +172,16 @@ const Sidebar = ({ page, onNav }) => {
 
             <div className="account-menu-section">
               {menuItem('help', 'Help & docs', () => {})}
-              {menuItem('signout', 'Sign out', () => {}, { danger: true })}
+              {menuItem('signout', 'Sign out', async () => {
+                const token = window.FpkToken || localStorage.getItem('fpk_session');
+                const workerUrl = window.__fpkWorkerUrl;
+                if (token && workerUrl) {
+                  try { await fetch(workerUrl + '/auth/logout', { method: 'POST', headers: { Authorization: 'Bearer ' + token } }); } catch {}
+                }
+                localStorage.removeItem('fpk_session');
+                window.FpkUser = null; window.FpkToken = null;
+                window.location.reload();
+              }, { danger: true })}
             </div>
           </div>
         )}

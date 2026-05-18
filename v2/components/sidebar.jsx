@@ -83,6 +83,64 @@ function Sidebar({ view, setView, selectedPortfolio, setSelectedPortfolio, portf
 
 window.Sidebar = Sidebar;
 
+// Renders attached to body so it escapes sidebar overflow:hidden/auto clipping
+function PortalDropdown({ anchorRef, user, loggingOut, onLogout, onClose }) {
+  const [pos, setPos] = React.useState({ top: 0, left: 0, width: 200 });
+
+  React.useEffect(() => {
+    if (!anchorRef.current) return;
+    const r = anchorRef.current.getBoundingClientRect();
+    setPos({ top: r.top, left: r.left, width: r.width });
+  }, []);
+
+  // Close on outside click
+  React.useEffect(() => {
+    const h = (e) => {
+      if (anchorRef.current && !anchorRef.current.contains(e.target)) onClose();
+    };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [onClose]);
+
+  return (
+    <div style={{
+      position: 'fixed',
+      top: pos.top - 8,
+      left: pos.left,
+      width: Math.max(pos.width, 180),
+      transform: 'translateY(-100%)',
+      background: 'var(--bg-1, #fff)', border: '1px solid var(--border, #e5e5e5)',
+      borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.18)',
+      padding: '6px', zIndex: 99999,
+      fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+    }}>
+      <div style={{padding:'6px 8px 8px', borderBottom:'1px solid var(--border, #e5e5e5)', marginBottom:4}}>
+        <div style={{fontWeight:600, fontSize:12, color:'var(--text, #111)'}}>{user.name || user.login}</div>
+        <div style={{fontSize:11, color:'var(--text-3, #888)'}}>@{user.login}</div>
+      </div>
+      <button
+        onClick={onLogout}
+        disabled={loggingOut}
+        style={{
+          width:'100%', textAlign:'left', background:'transparent', border:0,
+          padding:'6px 8px', borderRadius:6, cursor:'pointer',
+          fontSize:12, color:'var(--text-2, #444)',
+          display:'flex', alignItems:'center', gap:6,
+        }}
+        onMouseEnter={e => e.currentTarget.style.background='var(--surface-2, #f5f5f5)'}
+        onMouseLeave={e => e.currentTarget.style.background='transparent'}
+      >
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        {loggingOut ? 'Signing out…' : 'Sign out'}
+      </button>
+    </div>
+  );
+}
+
 function UserAvatar({ workerUrl }) {
   const [user, setUser]       = React.useState(window.FpkUser || null);
   const [open, setOpen]       = React.useState(false);
@@ -97,14 +155,6 @@ function UserAvatar({ workerUrl }) {
     }, 300);
     return () => clearInterval(id);
   }, []);
-
-  // Close dropdown on outside click
-  React.useEffect(() => {
-    if (!open) return;
-    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, [open]);
 
   const logout = async () => {
     setOut(true);
@@ -158,37 +208,15 @@ function UserAvatar({ workerUrl }) {
         <span style={{fontSize: 12.5}}>{user.name || user.login}</span>
       </button>
 
-      {open && (
-        <div style={{
-          position: 'absolute', bottom: '100%', left: 8, right: 8,
-          background: 'var(--surface-1)', border: '1px solid var(--border)',
-          borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.18)',
-          padding: '6px', zIndex: 9999,
-        }}>
-          <div style={{padding:'6px 8px 8px', borderBottom:'1px solid var(--border)', marginBottom:4}}>
-            <div style={{fontWeight:600, fontSize:12}}>{user.name || user.login}</div>
-            <div style={{fontSize:11, color:'var(--text-3)'}}>@{user.login}</div>
-          </div>
-          <button
-            onClick={logout}
-            disabled={loggingOut}
-            style={{
-              width:'100%', textAlign:'left', background:'transparent', border:0,
-              padding:'6px 8px', borderRadius:6, cursor:'pointer',
-              fontSize:12, color:'var(--text-2)',
-              display:'flex', alignItems:'center', gap:6,
-            }}
-            onMouseEnter={e => e.currentTarget.style.background='var(--surface-2)'}
-            onMouseLeave={e => e.currentTarget.style.background='transparent'}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-              <polyline points="16 17 21 12 16 7"/>
-              <line x1="21" y1="12" x2="9" y2="12"/>
-            </svg>
-            {loggingOut ? 'Signing out…' : 'Sign out'}
-          </button>
-        </div>
+      {open && ReactDOM.createPortal(
+        <PortalDropdown
+          anchorRef={ref}
+          user={user}
+          loggingOut={loggingOut}
+          onLogout={logout}
+          onClose={() => setOpen(false)}
+        />,
+        document.body
       )}
     </div>
   );
