@@ -302,14 +302,26 @@ const SESSION_KEY = 'fpk_session';
 // ── Component ─────────────────────────────────────────────────────────────────
 
 function FeedbackPicker({ version, repo, workerUrl }) {
-  const [user, setUser]           = React.useState(null);
-  const [authChecked, setChecked] = React.useState(false);
-  const [active, setActive]       = React.useState(false);   // hover-pick mode
-  const [highlight, setHighlight] = React.useState(null);    // current hover
-  const [selections, setSelections] = React.useState([]);    // captured elements
-  const [modalOpen, setModalOpen] = React.useState(false);
-  const [comment, setComment]     = React.useState('');
-  const [status, setStatus]       = React.useState(null);    // null | { type, msg }
+  const [user, setUser]             = React.useState(null);
+  const [authChecked, setChecked]   = React.useState(false);
+  const [active, setActive]         = React.useState(false);   // hover-pick mode (UI only)
+  const [highlight, setHighlight]   = React.useState(null);    // current hover
+  const [selections, setSelections] = React.useState([]);      // captured elements
+  const [modalOpen, setModalOpen]   = React.useState(false);
+  const [comment, setComment]       = React.useState('');
+  const [status, setStatus]         = React.useState(null);    // null | { type, msg }
+
+  // Refs so event handlers always see current values without re-registering
+  const activeRef    = React.useRef(false);
+  const modalOpenRef = React.useRef(false);
+
+  const setActiveBoth = React.useCallback((val) => {
+    activeRef.current = val;
+    setActive(val);
+    document.body.classList.toggle('fpk-cursor-active', val);
+  }, []);
+
+  React.useEffect(() => { modalOpenRef.current = modalOpen; }, [modalOpen]);
 
   const hasSelections = selections.length > 0;
 
@@ -319,54 +331,56 @@ function FeedbackPicker({ version, repo, workerUrl }) {
     setChecked(true);
   }, []);
 
-  // ── Ctrl key — activates hover mode ──────────────────────────────────────
+  // ── All input listeners in ONE effect, registered once per user ──────────
+  // Using refs means click/move handlers always see the live `active` value
+  // without depending on it — this eliminates the Ctrl+click race condition
+  // where keydown (active→true) and click fire synchronously before React can
+  // re-run the effect and attach the new click listener.
   React.useEffect(() => {
     if (!user) return;
-    const down = (e) => { if (e.key === 'Control' && !modalOpen) setActive(true); };
-    const up   = (e) => { if (e.key === 'Control') { setActive(false); setHighlight(null); } };
-    const blur = () => { setActive(false); setHighlight(null); };
-    window.addEventListener('keydown', down);
-    window.addEventListener('keyup',   up);
-    window.addEventListener('blur',    blur);
-    return () => {
-      window.removeEventListener('keydown', down);
-      window.removeEventListener('keyup',   up);
-      window.removeEventListener('blur',    blur);
+
+    const onKeyDown = (e) => {
+      if (e.key === 'Control' && !modalOpenRef.current) setActiveBoth(true);
     };
-  }, [user, modalOpen]);
+    const onKeyUp = (e) => {
+      if (e.key === 'Control') { setActiveBoth(false); setHighlight(null); }
+    };
+    const onBlur = () => { setActiveBoth(false); setHighlight(null); };
 
-  React.useEffect(() => {
-    document.body.classList.toggle('fpk-cursor-active', active);
-    return () => document.body.classList.remove('fpk-cursor-active');
-  }, [active]);
-
-  // ── Mouse tracking ────────────────────────────────────────────────────────
-  React.useEffect(() => {
-    if (!active) return;
-    const move = (e) => {
+    const onMove = (e) => {
+      if (!activeRef.current) return;
       const el = document.elementFromPoint(e.clientX, e.clientY);
       if (!el || fpkIsOwn(el)) return;
       setHighlight({ el, rect: el.getBoundingClientRect(), selector: fpkSelector(el) });
     };
-    const click = (e) => {
+
+    const onClick = (e) => {
+      if (!activeRef.current) return;
       const el = document.elementFromPoint(e.clientX, e.clientY);
       if (!el || fpkIsOwn(el)) return;
       e.preventDefault(); e.stopPropagation();
       const enriched = fpkEnrich(el);
       setSelections(prev => {
-        // don't add duplicate selector
         if (prev.some(s => s.selector === enriched.selector)) return prev;
         return [...prev, enriched].slice(0, 5); // max 5
       });
-      setActive(false); setHighlight(null);
+      setActiveBoth(false); setHighlight(null);
     };
-    window.addEventListener('mousemove', move, true);
-    window.addEventListener('click',     click, true);
+
+    window.addEventListener('keydown',    onKeyDown);
+    window.addEventListener('keyup',      onKeyUp);
+    window.addEventListener('blur',       onBlur);
+    window.addEventListener('mousemove',  onMove,  true);
+    window.addEventListener('click',      onClick, true);
     return () => {
-      window.removeEventListener('mousemove', move, true);
-      window.removeEventListener('click',     click, true);
+      window.removeEventListener('keydown',   onKeyDown);
+      window.removeEventListener('keyup',     onKeyUp);
+      window.removeEventListener('blur',      onBlur);
+      window.removeEventListener('mousemove', onMove,  true);
+      window.removeEventListener('click',     onClick, true);
+      document.body.classList.remove('fpk-cursor-active');
     };
-  }, [active]);
+  }, [user, setActiveBoth]); // re-register only if user changes
 
   // ── Actions ───────────────────────────────────────────────────────────────
   const removeSelection = (i) => {
@@ -378,7 +392,7 @@ function FeedbackPicker({ version, repo, workerUrl }) {
   };
 
   const openModal = () => {
-    setActive(false); setHighlight(null); setModalOpen(true);
+    setActiveBoth(false); setHighlight(null); setModalOpen(true);
   };
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -475,6 +489,15 @@ function FeedbackPicker({ version, repo, workerUrl }) {
       {/* Mini-bar — shown whenever ≥1 selection and modal is closed */}
       {hasSelections && !modalOpen && (
         <div data-fpk className="fpk-mini-bar">
+          <button data-fpk className="fpk-mini-btn fpk-mini-btn-done" onClick={openModal}>
+            → Create issue
+          </button>
+          {selections.length < 5 && (
+            <button data-fpk className="fpk-mini-btn fpk-mini-btn-add" onClick={() => setActiveBoth(true)}>
+              + Add area
+            </button>
+          )}
+          <div className="fpk-mini-spacer" />
           {selections.map((s, i) => (
             <span key={i} className="fpk-chip" style={{ background: BADGE_COLORS[i] }}>
               {BADGES[i]}
@@ -482,15 +505,6 @@ function FeedbackPicker({ version, repo, workerUrl }) {
               <button className="fpk-chip-remove" onClick={() => removeSelection(i)}>×</button>
             </span>
           ))}
-          <div className="fpk-mini-spacer" />
-          {selections.length < 5 && (
-            <button data-fpk className="fpk-mini-btn fpk-mini-btn-add" onClick={() => setActive(true)}>
-              + Add area
-            </button>
-          )}
-          <button data-fpk className="fpk-mini-btn fpk-mini-btn-done" onClick={openModal}>
-            → Create issue
-          </button>
         </div>
       )}
 
