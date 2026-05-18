@@ -481,13 +481,7 @@ function FeedbackPicker({ version, repo, workerUrl }) {
     <>
       <style>{__FPK_STYLE}</style>
 
-      {/* Auth badge (hide when mini-bar is showing) */}
-      {user && !hasSelections && !modalOpen && (
-        <div data-fpk className="fpk-auth-badge" title="Ctrl+Klick auf ein Element um Feedback zu geben">
-          <img src={user.avatar_url} alt={user.login} />
-          <span>Angemeldet als <strong>{user.login}</strong></span>
-        </div>
-      )}
+
 
       {/* Ctrl banner */}
       {active && (
@@ -668,6 +662,9 @@ function FeedbackPicker({ version, repo, workerUrl }) {
     console.warn('[FeedbackPicker] No <meta name="frieni-worker"> found — picker disabled.');
     return;
   }
+
+  // Expose workerUrl globally so UserAvatar in sidebar can use it for logout
+  window.__fpkWorkerUrl = workerUrl;
 
   const root = document.createElement('div');
   root.id = '__fpk_root';

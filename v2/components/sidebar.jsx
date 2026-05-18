@@ -74,18 +74,124 @@ function Sidebar({ view, setView, selectedPortfolio, setSelectedPortfolio, portf
           <Icon name="settings" size={15} />
           <span>Settings</span>
         </button>
-        <div className="sidebar-item" style={{cursor:'default'}}>
-          <div style={{
-            width: 22, height: 22, borderRadius: '50%',
-            background: 'linear-gradient(135deg, oklch(0.55 0.18 275), oklch(0.55 0.18 320))',
-            display: 'grid', placeItems: 'center',
-            color: 'white', fontSize: 10, fontWeight: 600,
-          }}>EM</div>
-          <span style={{fontSize: 12.5}}>Elena M.</span>
-        </div>
+        {/* GitHub user — populated by auth-gate via window.FpkUser */}
+        <UserAvatar workerUrl={window.__fpkWorkerUrl} />
       </div>
     </aside>
   );
 }
 
 window.Sidebar = Sidebar;
+
+function UserAvatar({ workerUrl }) {
+  const [user, setUser]       = React.useState(window.FpkUser || null);
+  const [open, setOpen]       = React.useState(false);
+  const [loggingOut, setOut]  = React.useState(false);
+  const ref                   = React.useRef(null);
+
+  // Pick up FpkUser if auth-gate sets it after mount
+  React.useEffect(() => {
+    if (window.FpkUser) { setUser(window.FpkUser); return; }
+    const id = setInterval(() => {
+      if (window.FpkUser) { setUser(window.FpkUser); clearInterval(id); }
+    }, 300);
+    return () => clearInterval(id);
+  }, []);
+
+  // Close dropdown on outside click
+  React.useEffect(() => {
+    if (!open) return;
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
+
+  const logout = async () => {
+    setOut(true);
+    try {
+      const token = window.FpkToken || localStorage.getItem('fpk_session');
+      if (token && workerUrl) {
+        await fetch(`${workerUrl}/auth/logout`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+      }
+    } finally {
+      localStorage.removeItem('fpk_session');
+      window.FpkUser = null;
+      window.FpkToken = null;
+      window.location.reload();
+    }
+  };
+
+  if (!user) return (
+    <div className="sidebar-item" style={{cursor:'default', opacity:.4}}>
+      <div style={{
+        width: 22, height: 22, borderRadius: '50%',
+        background: 'var(--surface-3)',
+        display: 'grid', placeItems: 'center',
+        color: 'var(--text-2)', fontSize: 10, fontWeight: 600,
+      }}>?</div>
+      <span style={{fontSize: 12.5, color:'var(--text-3)'}}>Not signed in</span>
+    </div>
+  );
+
+  const initials = user.login.slice(0, 2).toUpperCase();
+
+  return (
+    <div ref={ref} style={{position:'relative'}}>
+      <button
+        className="sidebar-item"
+        style={{cursor:'pointer', width:'100%'}}
+        onClick={() => setOpen(o => !o)}
+        title={`@${user.login} — click to sign out`}
+      >
+        {user.avatar_url
+          ? <img src={user.avatar_url} alt={user.login} style={{width:22,height:22,borderRadius:'50%',objectFit:'cover'}} />
+          : <div style={{
+              width: 22, height: 22, borderRadius: '50%',
+              background: 'linear-gradient(135deg, oklch(0.55 0.18 275), oklch(0.55 0.18 320))',
+              display: 'grid', placeItems: 'center',
+              color: 'white', fontSize: 10, fontWeight: 600,
+            }}>{initials}</div>
+        }
+        <span style={{fontSize: 12.5}}>{user.name || user.login}</span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: 'absolute', bottom: '100%', left: 8, right: 8,
+          background: 'var(--surface-1)', border: '1px solid var(--border)',
+          borderRadius: 10, boxShadow: '0 8px 24px rgba(0,0,0,.18)',
+          padding: '6px', zIndex: 9999,
+        }}>
+          <div style={{padding:'6px 8px 8px', borderBottom:'1px solid var(--border)', marginBottom:4}}>
+            <div style={{fontWeight:600, fontSize:12}}>{user.name || user.login}</div>
+            <div style={{fontSize:11, color:'var(--text-3)'}}>@{user.login}</div>
+          </div>
+          <button
+            onClick={logout}
+            disabled={loggingOut}
+            style={{
+              width:'100%', textAlign:'left', background:'transparent', border:0,
+              padding:'6px 8px', borderRadius:6, cursor:'pointer',
+              fontSize:12, color:'var(--text-2)',
+              display:'flex', alignItems:'center', gap:6,
+            }}
+            onMouseEnter={e => e.currentTarget.style.background='var(--surface-2)'}
+            onMouseLeave={e => e.currentTarget.style.background='transparent'}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+              <polyline points="16 17 21 12 16 7"/>
+              <line x1="21" y1="12" x2="9" y2="12"/>
+            </svg>
+            {loggingOut ? 'Signing out…' : 'Sign out'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
+window.UserAvatar = UserAvatar;
