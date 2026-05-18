@@ -28,7 +28,18 @@ const ICONS = {
 
 const Sidebar = ({ page, onNav }) => {
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const [fpkUser, setFpkUser]   = React.useState(window.FpkUser || null);
   const footRef = React.useRef(null);
+
+  // Poll until auth-gate sets window.FpkUser (async /auth/me fetch)
+  React.useEffect(() => {
+    if (window.FpkUser) { setFpkUser(window.FpkUser); return; }
+    const id = setInterval(() => {
+      if (window.FpkUser) { setFpkUser(window.FpkUser); clearInterval(id); }
+    }, 150);
+    setTimeout(() => clearInterval(id), 15000);
+    return () => clearInterval(id);
+  }, []);
 
   React.useEffect(() => {
     if (!menuOpen) return;
@@ -132,13 +143,13 @@ const Sidebar = ({ page, onNav }) => {
           aria-haspopup="menu"
           aria-expanded={menuOpen}
         >
-          {window.FpkUser?.avatar_url
-            ? <img src={window.FpkUser.avatar_url} alt={window.FpkUser.login}
+          {fpkUser?.avatar_url
+            ? <img src={fpkUser.avatar_url} alt={fpkUser.login}
                 style={{width:28,height:28,borderRadius:'50%',objectFit:'cover',flexShrink:0}} />
-            : <div className="user-avatar">{window.FpkUser ? window.FpkUser.login.slice(0,2).toUpperCase() : 'EM'}</div>
+            : <div className="user-avatar">{fpkUser ? fpkUser.login.slice(0,2).toUpperCase() : 'EM'}</div>
           }
           <div className="col" style={{ gap: 0, flex: 1, minWidth: 0 }}>
-            <div className="user-name">{window.FpkUser?.name || window.FpkUser?.login || 'Elena Marković'}</div>
+            <div className="user-name">{fpkUser?.name || fpkUser?.login || 'Elena Marković'}</div>
             <div className="user-tier">Pro · 2 connections</div>
           </div>
           <svg className="account-chevron" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
@@ -149,14 +160,14 @@ const Sidebar = ({ page, onNav }) => {
         {menuOpen && (
           <div className="account-menu" role="menu">
             <div className="account-menu-header">
-              {window.FpkUser?.avatar_url
-                ? <img src={window.FpkUser.avatar_url} alt={window.FpkUser.login}
+              {fpkUser?.avatar_url
+                ? <img src={fpkUser.avatar_url} alt={fpkUser.login}
                     style={{width:34,height:34,borderRadius:'50%',objectFit:'cover',flexShrink:0}} />
-                : <div className="user-avatar account-menu-avatar">{window.FpkUser ? window.FpkUser.login.slice(0,2).toUpperCase() : 'EM'}</div>
+                : <div className="user-avatar account-menu-avatar">{fpkUser ? fpkUser.login.slice(0,2).toUpperCase() : 'EM'}</div>
               }
               <div className="col" style={{ gap: 2, minWidth: 0 }}>
-                <div className="account-menu-name">{window.FpkUser?.name || window.FpkUser?.login || 'Elena Marković'}</div>
-                <div className="account-menu-email">@{window.FpkUser?.login || 'elena'}</div>
+                <div className="account-menu-name">{fpkUser?.name || fpkUser?.login || 'Elena Marković'}</div>
+                <div className="account-menu-email">@{fpkUser?.login || 'elena'}</div>
               </div>
             </div>
 

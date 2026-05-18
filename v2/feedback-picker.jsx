@@ -366,10 +366,21 @@ function FeedbackPicker({ version, repo, workerUrl }) {
 
   const hasSelections = selections.length > 0;
 
-  // ── Auth bootstrap ────────────────────────────────────────────────────────
+  // ── Auth bootstrap — poll until auth-gate sets FpkUser ──────────────────
   React.useEffect(() => {
-    if (window.FpkUser) setUser(window.FpkUser);
-    setChecked(true);
+    if (window.FpkUser) { setUser(window.FpkUser); setChecked(true); return; }
+    // auth-gate sets FpkUser asynchronously after /auth/me resolves;
+    // poll so the picker activates regardless of script load order
+    const id = setInterval(() => {
+      if (window.FpkUser) {
+        setUser(window.FpkUser);
+        setChecked(true);
+        clearInterval(id);
+      }
+    }, 150);
+    // Give up after 15s (no session / not logged in)
+    const timeout = setTimeout(() => { clearInterval(id); setChecked(true); }, 15000);
+    return () => { clearInterval(id); clearTimeout(timeout); };
   }, []);
 
   // ── All input listeners in ONE effect, registered once per user ──────────
