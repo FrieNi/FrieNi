@@ -147,13 +147,12 @@ function UserAvatar({ workerUrl }) {
   const [loggingOut, setOut]  = React.useState(false);
   const ref                   = React.useRef(null);
 
-  // Pick up FpkUser if auth-gate sets it after mount
+  // auth-gate dispatches fpk:user-ready once /auth/me resolves
   React.useEffect(() => {
     if (window.FpkUser) { setUser(window.FpkUser); return; }
-    const id = setInterval(() => {
-      if (window.FpkUser) { setUser(window.FpkUser); clearInterval(id); }
-    }, 300);
-    return () => clearInterval(id);
+    const onReady = (e) => setUser(e.detail);
+    window.addEventListener('fpk:user-ready', onReady, { once: true });
+    return () => window.removeEventListener('fpk:user-ready', onReady);
   }, []);
 
   const logout = async () => {

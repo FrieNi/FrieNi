@@ -366,21 +366,16 @@ function FeedbackPicker({ version, repo, workerUrl }) {
 
   const hasSelections = selections.length > 0;
 
-  // ── Auth bootstrap — poll until auth-gate sets FpkUser ──────────────────
+  // ── Auth bootstrap ────────────────────────────────────────────────────────
   React.useEffect(() => {
+    // auth-gate dispatches fpk:user-ready once /auth/me resolves
     if (window.FpkUser) { setUser(window.FpkUser); setChecked(true); return; }
-    // auth-gate sets FpkUser asynchronously after /auth/me resolves;
-    // poll so the picker activates regardless of script load order
-    const id = setInterval(() => {
-      if (window.FpkUser) {
-        setUser(window.FpkUser);
-        setChecked(true);
-        clearInterval(id);
-      }
-    }, 150);
-    // Give up after 15s (no session / not logged in)
-    const timeout = setTimeout(() => { clearInterval(id); setChecked(true); }, 15000);
-    return () => { clearInterval(id); clearTimeout(timeout); };
+    const onReady = (e) => { setUser(e.detail); setChecked(true); };
+    window.addEventListener('fpk:user-ready', onReady, { once: true });
+    // Fallback: no session at all — show nothing after auth-gate removes overlay
+    const onLoad = () => { if (!window.FpkUser) setChecked(true); };
+    document.addEventListener('DOMContentLoaded', onLoad, { once: true });
+    return () => window.removeEventListener('fpk:user-ready', onReady);
   }, []);
 
   // ── All input listeners in ONE effect, registered once per user ──────────

@@ -99,6 +99,8 @@
     window.FpkToken = localStorage.getItem(SESSION_KEY);
     overlay.remove();
     document.documentElement.style.visibility = '';
+    // Notify any components that are waiting for auth to complete
+    window.dispatchEvent(new CustomEvent('fpk:user-ready', { detail: user }));
   }
 
   // ── Check session ────────────────────────────────────────────────────────

@@ -31,14 +31,12 @@ const Sidebar = ({ page, onNav }) => {
   const [fpkUser, setFpkUser]   = React.useState(window.FpkUser || null);
   const footRef = React.useRef(null);
 
-  // Poll until auth-gate sets window.FpkUser (async /auth/me fetch)
+  // auth-gate dispatches fpk:user-ready once /auth/me resolves
   React.useEffect(() => {
     if (window.FpkUser) { setFpkUser(window.FpkUser); return; }
-    const id = setInterval(() => {
-      if (window.FpkUser) { setFpkUser(window.FpkUser); clearInterval(id); }
-    }, 150);
-    setTimeout(() => clearInterval(id), 15000);
-    return () => clearInterval(id);
+    const onReady = (e) => setFpkUser(e.detail);
+    window.addEventListener('fpk:user-ready', onReady, { once: true });
+    return () => window.removeEventListener('fpk:user-ready', onReady);
   }, []);
 
   React.useEffect(() => {
