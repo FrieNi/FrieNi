@@ -196,6 +196,17 @@ const __FPK_STYLE = `
   }
   .fpk-submit:hover { background: rgb(20,100,240); }
   .fpk-submit:disabled { background: rgba(0,0,0,.15); color: rgba(0,0,0,.35); cursor: not-allowed; }
+
+  /* Per-area note inputs */
+  .fpk-area-note-row { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; }
+  .fpk-area-note-label { display: flex; align-items: center; gap: 6px; }
+  .fpk-area-note-input {
+    width: 100%; box-sizing: border-box;
+    border: 1px solid rgba(0,0,0,.12); border-radius: 6px;
+    padding: 6px 10px; font: 12px/1.4 ui-sans-serif,system-ui,sans-serif;
+    outline: none; color: #1a1a1a; background: #fafafa;
+  }
+  .fpk-area-note-input:focus { border-color: rgba(30,115,255,.5); background: #fff; box-shadow: 0 0 0 2px rgba(30,115,255,.1); }
 `;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -220,14 +231,30 @@ function fpkIsOwn(el) {
   return !!(el && el.closest && (el.closest('[data-fpk]') || el.closest('#__fpk_root')));
 }
 
+// Generic IDs that add no useful context — skip when climbing tree
+const FPK_GENERIC_IDS = new Set([
+  'root','app','main','page','content','layout','wrapper','container',
+  'body','header','footer','nav','sidebar','shell','outlet','inner',
+]);
+
 // Enrich an element with zero-code-change context signals
 function fpkEnrich(el) {
   const route     = window.location.pathname;
   const pageTitle = document.title;
 
-  // Nearest heading: walk up, also check previous siblings at each level
-  let nearestHeading = null;
+  // data-component / data-testid — most precise, walk up
+  let dataComponent = null, dataTestId = null;
   let node = el;
+  while (node && node !== document.body) {
+    if (!dataComponent && node.dataset?.component) dataComponent = node.dataset.component;
+    if (!dataTestId   && node.dataset?.testid)    dataTestId   = node.dataset.testid;
+    if (dataComponent && dataTestId) break;
+    node = node.parentElement;
+  }
+
+  // Nearest heading: walk up + scan prev siblings at each level
+  let nearestHeading = null;
+  node = el;
   outer: while (node && node !== document.body) {
     if (/^H[1-6]$/.test(node.tagName)) {
       nearestHeading = (node.innerText || '').trim().replace(/\s+/g, ' ').slice(0, 60);
@@ -244,11 +271,12 @@ function fpkEnrich(el) {
     node = node.parentElement;
   }
 
-  // Nearest ancestor with a meaningful id
+  // Nearest ancestor with a meaningful (non-generic) id
   let nearestId = null;
   node = el;
   while (node && node !== document.body) {
-    if (node.id && !node.id.startsWith('__fpk') && !node.id.startsWith('fpk-')) {
+    if (node.id && !node.id.startsWith('__fpk') && !node.id.startsWith('fpk-')
+        && !FPK_GENERIC_IDS.has(node.id.toLowerCase())) {
       nearestId = node.id; break;
     }
     node = node.parentElement;
@@ -266,10 +294,10 @@ function fpkEnrich(el) {
     node = node.parentElement;
   }
 
-  // SPA router state — React Router / Vue Router store route name here
+  // SPA router state
   const routeName = window.history?.state?.name || window.history?.state?.as || null;
 
-  const text = (el.innerText || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 120);
+  const text = (el.innerText || el.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 200);
   const r    = el.getBoundingClientRect();
 
   return {
@@ -279,22 +307,35 @@ function fpkEnrich(el) {
     route,
     pageTitle,
     routeName,
+    dataComponent,
+    dataTestId,
     nearestHeading,
     nearestId,
     ariaLabel,
     ariaRole,
+    note: '',
     rect: { top: r.top, left: r.left, width: r.width, height: r.height },
   };
 }
 
+// Stable human label — priority: data-component > heading > aria > text snippet > tag+route
 function fpkChipLabel(s) {
-  return s.nearestHeading || s.ariaLabel || s.routeName || s.route;
+  if (s.dataComponent) return s.dataComponent;
+  if (s.nearestHeading) return s.nearestHeading;
+  if (s.ariaLabel) return s.ariaLabel;
+  if (s.routeName) return s.routeName;
+  const t = (s.text || '').slice(0, 40).trim();
+  if (t && t.length > 4) return t;
+  return s.tagName + ' on ' + s.route;
 }
 
 function fpkAutoTitle(selections, version) {
-  const areas = selections.map(fpkChipLabel);
-  if (selections.length === 1) return `[${version}] ${areas[0]}`;
-  return `[${version}] ${selections.length} areas: ${areas.join(' + ')}`;
+  // Deduplicate labels — same component selected N times → show once with ×N
+  const counts = {};
+  selections.forEach(s => { const l = fpkChipLabel(s); counts[l] = (counts[l] || 0) + 1; });
+  const parts = Object.entries(counts).map(([l, n]) => n > 1 ? `${l} (x${n})` : l);
+  if (parts.length === 1) return `[${version}] ${parts[0]}`;
+  return `[${version}] ${parts.join(' · ')}`;
 }
 
 const SESSION_KEY = 'fpk_session';
@@ -360,10 +401,7 @@ function FeedbackPicker({ version, repo, workerUrl }) {
       if (!el || fpkIsOwn(el)) return;
       e.preventDefault(); e.stopPropagation();
       const enriched = fpkEnrich(el);
-      setSelections(prev => {
-        if (prev.some(s => s.selector === enriched.selector)) return prev;
-        return [...prev, enriched].slice(0, 5); // max 5
-      });
+      setSelections(prev => [...prev, enriched].slice(0, 5)); // max 5, duplicates allowed
       setActiveBoth(false); setHighlight(null);
     };
 
@@ -416,16 +454,19 @@ function FeedbackPicker({ version, repo, workerUrl }) {
             route:          s.route,
             pageTitle:      s.pageTitle,
             routeName:      s.routeName,
+            dataComponent:  s.dataComponent,
+            dataTestId:     s.dataTestId,
             nearestHeading: s.nearestHeading,
             nearestId:      s.nearestId,
             ariaLabel:      s.ariaLabel,
             ariaRole:       s.ariaRole,
+            note:           s.note || '',
           })),
           comment: comment.trim(),
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Fehler');
+      if (!res.ok) throw new Error(data.detail || data.error || 'Fehler');
       setStatus({ type: 'success', msg: `✓ Issue #${data.number} erstellt` });
       setTimeout(resetAll, 2000);
     } catch (err) {
@@ -497,11 +538,10 @@ function FeedbackPicker({ version, repo, workerUrl }) {
               + Add area
             </button>
           )}
-          <div className="fpk-mini-spacer" />
           {selections.map((s, i) => (
             <span key={i} className="fpk-chip" style={{ background: BADGE_COLORS[i] }}>
               {BADGES[i]}
-              <span title={fpkChipLabel(s)}>{fpkChipLabel(s).slice(0, 28)}</span>
+              <span title={fpkChipLabel(s)}>{fpkChipLabel(s).slice(0, 26)}</span>
               <button className="fpk-chip-remove" onClick={() => removeSelection(i)}>×</button>
             </span>
           ))}
@@ -570,6 +610,27 @@ function FeedbackPicker({ version, repo, workerUrl }) {
             <div className="fpk-body">
               <div className="fpk-title-label">Auto-generated title</div>
               <div className="fpk-title-preview">{fpkAutoTitle(selections, version)}</div>
+
+              {selections.map((s, i) => (
+                <div key={i} className="fpk-area-note-row">
+                  <div className="fpk-area-note-label">
+                    <span style={{ display:'inline-flex', alignItems:'center', justifyContent:'center',
+                      width:18, height:18, borderRadius:'50%', background:BADGE_COLORS[i],
+                      color:'#fff', fontSize:12, flexShrink:0 }}>{BADGES[i]}</span>
+                    <span style={{ fontSize:11, color:'rgba(0,0,0,.5)' }}>{fpkChipLabel(s).slice(0, 44)}</span>
+                  </div>
+                  <input
+                    className="fpk-area-note-input"
+                    placeholder="Note for this area (optional)"
+                    value={s.note || ''}
+                    onChange={e => setSelections(prev => prev.map((sel, idx) =>
+                      idx === i ? { ...sel, note: e.target.value } : sel
+                    ))}
+                  />
+                </div>
+              ))}
+
+              <div className="fpk-title-label" style={{ marginTop:10 }}>Overall description</div>
               <textarea
                 className="fpk-textarea"
                 placeholder="Beschreibe das Problem oder den Vorschlag…"
